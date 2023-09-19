@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>滑块验证码</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/static/css/captcha.css">
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/captcha.js"></script>
+</head>
+<body>
+<div class="slider">
+    <div class="content">
+        <div class="bg-img-div">
+            <img id="bg-img" src="" alt/>
+        </div>
+        <div class="slider-img-div" id="slider-img-div">
+            <img id="slider-img" src="" alt/>
+        </div>
+    </div>
+    <div class="slider-move">
+        <div class="slider-move-track">拖动滑块完成拼图</div>
+        <div class="slider-move-btn" id="slider-move-btn"></div>
+    </div>
+    <div class="bottom">
+        <div class="close-btn" id="slider-close-btn"></div>
+        <div class="refresh-btn" id="slider-refresh-btn"></div>
+    </div>
+</div>
+<script>
+    let currentCaptchaId = null;
+
+    function refreshCaptcha() {
+        $.get("/gen", function (data) {
+            reset();
+            currentCaptchaId = data.id;
+            const bgImg = $("#bg-img");
+            const sliderImg = $("#slider-img");
+            bgImg.attr("src", data.captcha.backgroundImage);
+            sliderImg.attr("src", data.captcha.templateImage);
+            initConfig(bgImg.width(), bgImg.height(), sliderImg.width(), sliderImg.height(), 206);
+        })
+    }
+
+    function doMove(currentCaptchaConfig) {
+        const moveX = currentCaptchaConfig.moveX;
+        $("#slider-move-btn").css("transform", "translate(" + moveX + "px, 0px)")
+        $("#slider-img-div").css("transform", "translate(" + moveX + "px, 0px)")
+    }
+
+    function reset() {
+        $("#slider-move-btn").css("background-position", "-5px 11.79625%")
+        $("#slider-move-btn").css("transform", "translate(0px, 0px)")
+        $("#slider-img-div").css("transform", "translate(0px, 0px)")
+        currentCaptchaId = null;
+    }
+</script>
+</body>
+</html>

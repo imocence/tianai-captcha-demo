@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/captcha.css">
+</head>
+<body>
+<div class="slider rotate">
+    <div class="content">
+        <div class="bg-img-div">
+            <img id="bg-img" src="" alt/>
+        </div>
+        <div class="slider-img-div" id="slider-img-div">
+            <img id="slider-img" src="" alt/>
+        </div>
+    </div>
+    <div class="slider-move">
+        <div class="slider-move-track">拖动滑块旋转正确位置</div>
+        <div class="slider-move-btn" id="slider-move-btn"></div>
+    </div>
+    <div class="bottom">
+        <div class="close-btn" id="slider-close-btn"></div>
+        <div class="refresh-btn" id="slider-refresh-btn"></div>
+    </div>
+</div>
+<script src="/static/js/jquery.min.js"></script>
+<script src="/static/js/captcha.js"></script>
+<script>
+    // =========== 旋转
+    let currentCaptchaId = null;
+    function refreshCaptcha() {
+        $.get("/gen?type=ROTATE", function (data) {
+            reset();
+            currentCaptchaId = data.id;
+            const bgImg = $("#bg-img");
+            bgImg.attr("src", data.captcha.backgroundImage);
+            const sliderImg = $("#slider-img");
+            sliderImg.attr("src", data.captcha.templateImage);
+            initConfig(206, bgImg.height(), sliderImg.width(), sliderImg.height(), 206);
+        })
+    }
+
+    function doMove(currentCaptchaConfig) {
+        const moveX = currentCaptchaConfig.moveX;
+        $("#slider-move-btn").css("transform", "translate(" + moveX + "px, 0px)")
+        $("#slider-img").css("transform", "rotate(" + (moveX / (currentCaptchaConfig.end / 360)) + "deg)")
+    }
+
+    function reset() {
+        $("#rotate-move-btn").css("background-position", "-5px 11.79625%")
+        $("#rotate-move-btn").css("transform", "translate(0px, 0px)")
+        $("#slider-img").css("transform", "rotate(0deg)")
+        currentCaptchaId = null;
+    }
+</script>
+</body>
+</html>

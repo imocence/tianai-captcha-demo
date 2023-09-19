@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Document</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/static/css/captcha.css">
+    <script src="/static/js/jquery.min.js"></script>
+</head>
+<body>
+<div>
+    <ul class="top">
+        <li onclick="toggle('/slider')">滑块验证码</li>
+        <li onclick="toggle('/rotate')">旋转验证码</li>
+        <li onclick="toggle('/concat')">滑动还原验证码</li>
+        <li onclick="toggle('/word-click')">点选验证码</li>
+    </ul>
+    <iframe id="captcha-iframe" class="captcha-iframe" src="/slider"></iframe>
+</div>
+<script>
+    function toggle(url) {
+        $("#captcha-iframe").attr("src", url);
+    }
+</script>
+</body>
+</html>
