@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>多图验证码</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/static/js/jquery.min.js"></script>
+    <style>
+        /* 初始状态的样式 */
+        .image-container {
+            position: relative;
+            width: 400px; /* 调整图片容器宽度 */
+            height: 200px; /* 调整图片容器高度 */
+        }
+
+        .image-area {
+            position: absolute;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        /* 选中状态的样式 */
+        .image-area.selected {
+            border: 2px solid #ff0026;
+        }
+    </style>
+</head>
+<body>
+<div style="margin: 10px">
+    <label>选中图片中的"<span id="tip" th:text="${tip}"></span>"</label>
+    <button type="button" id="refresh">刷新图片</button>
+    <button type="button" id="check">验证</button>
+</div>
+<div class="image-container" style="width: 100%;height: 100%;position:relative;z-index: 0;" id="png">
+    <img th:src="@{/assets/tmp/{name}(name=${name})}" alt="" id="images" style="z-index: 1;">
+    <!-- 区域1 -->
+    <div class="image-area" style="left: 0px; top: 0px; width: 100px; height: 100px;" onclick="toggleSelected(this)"></div>
+    <!-- 区域2 -->
+    <div class="image-area" style="left: 100px; top: 0px; width: 100px; height: 100px;" onclick="toggleSelected(this)"></div>
+    <!-- 区域3 -->
+    <div class="image-area" style="left: 200px; top: 0px; width: 100px; height: 100px;" onclick="toggleSelected(this)"></div>
+    <!-- 区域4 -->
+    <div class="image-area" style="left: 300px; top: 0px; width: 100px; height: 100px;" onclick="toggleSelected(this)"></div>
+    <!-- 区域3 -->
+    <div class="image-area" style="left: 0px; top: 100px; width: 100px; height: 100px;" onclick="toggleSelected(this)"></div>
+    <!-- 区域4 -->
+    <div class="image-area" style="left: 100px; top: 100px; width: 100px; height: 100px;" onclick="toggleSelected(this)"></div>
+    <!-- 区域3 -->
+    <div class="image-area" style="left: 200px; top: 100px; width: 100px; height: 100px;" onclick="toggleSelected(this)"></div>
+    <!-- 区域4 -->
+    <div class="image-area" style="left: 300px; top: 100px; width: 100px; height: 100px;" onclick="toggleSelected(this)"></div>
+</div>
+<script>
+    let currentCaptchaId = "[[${id}]]";
+    var index = 0;
+    $("#png").click(function (event) {
+        event = event || window.event;
+        let x = event.offsetX || event.originalEvent.layerX;
+        let y = event.offsetY || event.originalEvent.layerY;
+        let div = $("<div></div>");
+        div.addClass("logo");
+        div.css("left", (x - 12) + "px");
+        div.css("top", (y - 12) + "px");
+        div.attr("index", index++);
+        div.click(function () {
+            let nowindex = div.attr("index");
+            $('.logo[index=' + nowindex + ']').remove();
+        });
+        /**
+         * 阻止边框的影响
+         * 处理不完美
+         */
+        if (x > 13 && y > 13 && x < 400 && y < 200) {
+            // var value=$("#location").val()+x+","+y+";"
+            // $("#location").val(value);
+            $("#png").append(div);
+        }
+    });
+
+    $("#check").click(function () {
+        var votes = "";
+        $(".logo").each(function () {
+            votes += $(this).css("left") + "," + $(this).css("top") + ";";
+        });
+        votes = votes.replace(/px/g, "");
+        $.ajax({
+            type: "POST",
+            url: "/checkPng",
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify({"id": currentCaptchaId, "location": votes}),
+            success: function (res) {
+                if (res.success) {
+                    alert("验证成功!!!");
+                } else {
+                    alert("验证失败,将刷新!");
+                }
+                document.getElementById("refresh").click();
+            }
+        })
+    });
+
+    $("#refresh").click(function () {
+        $.ajax({
+            url: "/getPng", success: function (data) {
+                currentCaptchaId = data.id;
+                $("#images").attr("src", "/assets/tmp/" + data.name);
+                $("#tip").html(data.tip);
+                $(".logo").remove();
+                $('.image-area.selected').removeClass('selected');
+            },
+            error: function () {
+                alert("请求失败");
+            }
+        });
+    });
+
+    function toggleSelected(element) {
+        element.classList.toggle("selected");
+    }
+</script>
+</body>
+</html>

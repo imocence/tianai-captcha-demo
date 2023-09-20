@@ -15,14 +15,19 @@ import cloud.tianai.captcha.resource.impl.provider.ClassPathResourceProvider;
 import cloud.tianai.captcha.validator.ImageCaptchaValidator;
 import cloud.tianai.captcha.validator.common.model.dto.ImageCaptchaTrack;
 import cloud.tianai.captcha.validator.impl.BasicCaptchaTrackValidator;
+import cloud.tianai.entity.ImageResult;
+import cloud.tianai.util.GenerateImage;
+import cloud.tianai.util.UUIDS;
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Controller
@@ -101,7 +106,7 @@ public class CaptchaController {
         // 生成滑块图片
         ImageCaptchaInfo imageCaptchaInfo = imageCaptchaGenerator.generateCaptchaImage(type);
         CaptchaResponse<ImageCaptchaInfo> captchaInfoMap = new CaptchaResponse<>();
-        String UID = UUID.randomUUID().toString().replace("-", "");
+        String UID = UUIDS.getUUID();
         captchaInfoMap.setId(UID);
         captchaInfoMap.setCaptcha(imageCaptchaInfo);
         session.setAttribute(UID, imageCaptchaInfo);
@@ -119,5 +124,89 @@ public class CaptchaController {
         Map<String, Object> map = imageCaptchaValidator.generateImageCaptchaValidData(info);
         ImageCaptchaValidator sliderCaptchaValidator = new BasicCaptchaTrackValidator();
         return sliderCaptchaValidator.valid(track, map);
+    }
+
+    @GetMapping("/rcaptcha")
+    public String rcaptcha(HttpSession session, Model model) {
+        ImageResult imageResult = GenerateImage.generateImage();
+        session.setAttribute(imageResult.getUniqueKey(), imageResult);
+        if (imageResult != null) {
+            model.addAttribute("id", imageResult.getUniqueKey());
+            model.addAttribute("name", imageResult.getName());
+            model.addAttribute("tip", imageResult.getTip());
+        }
+        return "rcaptcha";
+    }
+
+    /**
+     * 刷新图片
+     */
+    @RequestMapping(value = "/getPng")
+    @ResponseBody
+    public Object getPng(HttpServletRequest request) {
+        ImageResult imageResult = GenerateImage.generateImage();
+        request.getSession().setAttribute(imageResult.getUniqueKey(), imageResult);
+        JSONObject json = new JSONObject();
+        json.put("id", imageResult.getUniqueKey());
+        json.put("name", imageResult.getName());
+        json.put("tip", imageResult.getTip());
+        return json;
+    }
+
+    @RequestMapping(value = "/checkPng")
+    @ResponseBody
+    public ApiResponse validateLocation(HttpSession session, @RequestBody String data) {
+        JSONObject json = JSONObject.parseObject(data);
+        int count = 0;
+        if (json != null) {
+            ImageResult imageResult = (ImageResult) session.getAttribute(json.getString("id"));
+            String[] locations = json.getString("location").split(";");
+            for (int j = 0; j < locations.length; j++) {
+                String[] loc = locations[j].split(",");
+                int x = Integer.valueOf(loc[0]);
+                int y = Integer.valueOf(loc[1]);
+                if (validateLocation(imageResult, x, y)) {
+                    count++;
+                }
+            }
+            GenerateImage.remove(imageResult);
+            if (count == imageResult.getKeySet().size()) {
+                return ApiResponse.ofSuccess(count);
+            }
+        }
+        return ApiResponse.ofError("验证失败", count);
+    }
+
+    /**
+     * 验证是否正确
+     *
+     * @param result 用于存储的
+     * @param x      x left
+     * @param y      y top
+     * @return
+     */
+    private boolean validateLocation(ImageResult result, int x, int y) {
+        Set<Integer> keySet = result.getKeySet();
+        //判断x
+        for (Integer i : keySet) {
+            int minX = 0;
+            if (i < 4) {
+                minX = i * 100;
+            } else {
+                minX = (i % 4 * 100);
+            }
+            int maxX = minX + 100;
+            if (x > minX && x < maxX) {
+                int minY = 0;
+                int maxY = 200;
+                if (i < 4) {
+                    maxY = 100;
+                }
+                if (y > minY && y < maxY) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
